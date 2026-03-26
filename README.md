@@ -1,6 +1,6 @@
 # cs122_Project
-Title: NOAA Coastal Data Visualizer 
-Author: Dan Nguyen, Joyce Liu
+## Title: NOAA Coastal Data Visualizer 
+## Author: Dan Nguyen, Joyce Liu
 
 ## Description:
 A Python based interface that retrieves real-time ocean data from NOAA, analyzes it, and visualizes it for users. The goal is to allow users to explore ocean conditions such as water temperature and sea level through an interactive GUI.
