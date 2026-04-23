@@ -1,31 +1,49 @@
 import tkinter as tk
 from tkinter import ttk
 import requests
-import panda as pd
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from datetime import date, timedelta
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
 
 class DataApp:
     def __init__(self, root):
         self.root = root
         self.root.title("NOAA Coastal Data Visualizer")
         self.station_id = "9414290"
-        
+        self.today = date.today()
+        print(self.today)
+
         self.df = pd.DataFrame()
         self.filtered_df = pd.DataFrame()
 
-        self.products ={
-            "Water Temperature": "water_temperature"
-            "Water Level": "water_level"
-            "Tide Predictions": "predictions"
+        self.products = {
+            "Water Temperature": "water_temperature",
+            "Water Level": "water_level",
+            "Tide Predictions": "predictions",
         }
-        tk.Label(root, text="Ocean Data Dashboard", font=("Time New Roman", 16)).pack(pady=10)
+
+        self.stations = {
+            "San Francisco": 9414290,
+            "Bay Bridge": 9414304,
+            "Redwood City": 9414523,
+            "Alameda": 9414750,
+            "Oakland Middle Harbor": 9414769,
+            "Monterey": 9413450,
+            "Port Chicago": 9415144,
+            "Point Reyes": 9415020,
+            "Washington Lake": 9416131
+        }
+
+        tk.Label(root, text="Ocean Data Dashboard",
+                 font=("Time New Roman", 16)).pack(pady=10)
         tk.Label(root, text="Station ID: 9414290").pack()
         control_frame = tk.Frame(root)
         control_frame.pack(pady=10)
 
         tk.Label(control_frame, text="Data type").grid(row=0, column=0, padx=5)
-
         self.product_var = tk.StringVar(value="Water Temperature")
         self.product_menu = ttk.Combobox(
             control_frame,
@@ -33,14 +51,36 @@ class DataApp:
             values=list(self.products.keys()),
             state="readonly"
         )
+
+        tk.Label(control_frame, text="Time range (hours)").grid(
+            row=0, column=1, padx=5)
+        self.time_range_var = tk.StringVar(value=1)
+        self.time_range_input = tk.Entry(
+            control_frame, 
+            textvariable=self.time_range_var
+        )
+
+        tk.Label(control_frame, text="Station").grid(row=0, column=2, padx=5)
+        self.station_var = tk.StringVar(value="San Francisco")
+        self.station_menu = ttk.Combobox(
+            control_frame,
+            textvariable=self.station_var,
+            values=list(self.stations.keys()),
+            state="readonly"
+        )
+
         self.product_menu.grid(row=1, column=0, padx=5)
-         self.get_button = tk.Button(control_frame, text="Get Data", command=self.get_data)
-        self.get_button.grid(row=2, column=0, padx=5)
+        self.time_range_input.grid(row=1, column=1, padx=5)
+        self.station_menu.grid(row=1, column=2, padx=5)
+        self.get_button = tk.Button(
+            control_frame, text="Get Data", command=self.get_data)
+        self.get_button.grid(row=1, column=3, padx=5)
 
-        self.filter_button = tk.Button(control_frame, text="Filter", command=self.open_filer_window)
-        self.filter_button.grid(row=1, column=2, padx=5)
+        self.visualization_button = tk.Button(
+            control_frame, text="Open Visualizations", command=self.open_visualization_window)
+        self.visualization_button.grid(row=2, column=1, padx=5)
 
-        self.figure, self.ax = plt.subplots(figsize=(6,3))
+        self.figure, self.ax = plt.subplots(figsize=(6, 2))
         self.canvas = FigureCanvasTkAgg(self.figure, master=root)
         self.canvas.get_tk_widget().pack(pady=10)
 
@@ -65,3 +105,11 @@ class DataApp:
             "format": "json"
         }
 
+    def open_visualization_window(self):
+        print("Visualization window clicked")
+
+
+if __name__ == "__main__":
+    root = tk.Tk()  # Change from Tk() to tk.Tk()
+    app = DataApp(root)
+    root.mainloop()
