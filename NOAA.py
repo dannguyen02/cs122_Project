@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 import requests
 import pandas as pd
 import numpy as np
@@ -20,7 +20,6 @@ class DataApp:
         self.products = {
             "Water Temperature": "water_temperature",
             "Water Level": "water_level",
-            # "Hourly Height": "hourly_height",
             "Tide Predictions": "predictions",
         }
 
@@ -116,11 +115,6 @@ class DataApp:
         begin_date = start_date.strftime("%Y%m%d")
         end_date = pd.to_datetime("today").strftime("%Y%m%d")
 
-        print(self.time_range_var.get())
-        print(begin_date)
-        print(end_date)
-
-
         local_filename = f"{station_name}_{product}_{begin_date}_{end_date}.csv"
         local_filepath = os.path.join(self.data_folder, local_filename)
 
@@ -135,7 +129,6 @@ class DataApp:
             self.status_label["text"] = f"Found and loaded data from local file {local_filepath}"
             return
     
-
         print("data not found locally, using api")
         url = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter"
         station = str(self.stations[self.station_var.get()])
@@ -151,7 +144,7 @@ class DataApp:
             "format": "json"
         }
 
-        if product in ["water_level", "hourly_height", "predictions"]:
+        if product in ["water_level", "predictions"]:
                 params["datum"] = "MLLW"
                 if product == "predictions":
                     params["interval"] = "h"
@@ -164,9 +157,11 @@ class DataApp:
             # print(json.dumps(data, indent=4))
             if "error" in data:
                 self.status_label["text"] = data["error"]["message"]
+                messagebox.showerror("Error", data["error"]["message"])
                 return
         except:
             self.status_label["text"] = "Error getting data"
+            messagebox.showerror("Error", data["error"]["message"])
             return
 
         if "data" in data:
@@ -261,6 +256,8 @@ class DataApp:
         except Exception as e:
             print(f"Save failed: {e}")
             self.status_label["text"] = "Save Error"
+            messagebox.showerror("Error", "Save Error")
+            
             return None
         
 
