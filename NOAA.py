@@ -6,6 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import os
+from scipy.signal import savgol_filter
+from statsmodels.tsa.seasonal import seasonal_decompose
 
 
 class DataApp:
@@ -18,17 +20,15 @@ class DataApp:
         self.filtered_df = pd.DataFrame()
 
         self.products = {
-            "Water Temperature": "water_temperature",
-            "Water Level": "water_level",
-            "Tide Predictions": "predictions",
+            "Water Temperature (°C)": "water_temperature",
+            "Water Level (Meters)": "water_level",
+            "Tide Height Predictions (Meters)": "predictions",
         }
 
         self.stations = {
             "San Francisco": 9414290,
-            "Bay Bridge": 9414304,
             "Redwood City": 9414523,
             "Alameda": 9414750,
-            "Oakland Middle Harbor": 9414769,
             "Monterey": 9413450,
             "Port Chicago": 9415144,
             "Point Reyes": 9415020,
@@ -36,19 +36,19 @@ class DataApp:
         }
 
         tk.Label(root, text="Ocean Data Dashboard",
-                 font=("Arial",)).pack(pady=10)
+                 font=("Arial",24)).pack(pady=10)
         control_frame = tk.Frame(root)
         control_frame.pack(pady=10)
 
         tk.Label(control_frame, text="Data type").grid(row=0, column=0, padx=5)
 
-        self.product_var = tk.StringVar(value="Water Temperature")
+        self.product_var = tk.StringVar(value="Water Temperature (°C)")
         self.product_menu = ttk.Combobox(
             control_frame,
             textvariable=self.product_var,
             values=list(self.products.keys()),
             state="readonly",
-            width=18
+            width=25
         )
         self.product_menu.grid(row=1, column=0, padx=8)
 
@@ -77,12 +77,12 @@ class DataApp:
         self.get_button = tk.Button(control_frame, text="Get Data", command=self.get_data)
         self.get_button.grid(row=1, column=3, padx=8)
 
-        self.visualization_button = tk.Button(
-            control_frame,
-            text="Open Visualizations",
-            command=self.open_visualization_window
-        )
-        self.visualization_button.grid(row=1, column=4, padx=8)
+        # self.visualization_button = tk.Button(
+        #     control_frame,
+        #     text="Open Visualizations",
+        #     command=self.open_visualization_window
+        # )
+        # self.visualization_button.grid(row=1, column=4, padx=8)
 
         # self.save_button = tk.Button(
         #     control_frame, 
@@ -144,10 +144,17 @@ class DataApp:
             "format": "json"
         }
 
-        if product in ["water_level", "predictions"]:
-                params["datum"] = "MLLW"
-                if product == "predictions":
-                    params["interval"] = "h"
+        # if product in ["water_level", "predictions"]:
+        #         params["datum"] = "MLLW"
+        #         if product == "predictions":
+        #             params["interval"] = "h"
+
+        if product == "water_level":
+            params["datum"] = "MLLW"
+
+        if product == "predictions":
+            params["datum"] = "MLLW"
+            params["interval"] = "h"
 
         try:
             response = requests.get(url, params=params)
@@ -156,11 +163,15 @@ class DataApp:
             # import json
             # print(json.dumps(data, indent=4))
             if "error" in data:
+                self.filtered_df = pd.DataFrame()
+                self.update_plot()
                 self.status_label["text"] = data["error"]["message"]
                 messagebox.showerror("Error", data["error"]["message"])
                 return
         except:
             self.status_label["text"] = "Error getting data"
+            self.filtered_df = pd.DataFrame()
+            self.update_plot()
             messagebox.showerror("Error", data["error"]["message"])
             return
 
@@ -205,12 +216,31 @@ class DataApp:
         if self.filtered_df.empty:
             self.ax.set_title("No data")
         else:
-            self.ax.plot(self.filtered_df["time"], self.filtered_df["value"])
+            # self.ax.plot(self.filtered_df["time"], self.filtered_df["value"], label='Data')
             self.ax.set_title(self.product_var.get())
             self.ax.set_xlabel("Time")
             self.ax.set_ylabel("Value")
-            self.ax.tick_params(axis="x", rotation=25)
+            self.ax.tick_params(axis="x", rotation=25, labelsize=8)
 
+            category = self.product_var.get() 
+            x = self.filtered_df['time']
+            y = self.filtered_df['value']
+
+            self.ax.plot(x, y, color="black", label="Data")
+
+            if "Temperature" in category:
+                # Straight line for Temp
+                z = np.polyfit(pd.to_numeric(x), y, 1)
+                p = np.poly1d(z)
+                self.ax.plot(x, p(pd.to_numeric(x)), "r--", label="Temp Trend", alpha=0.4, linestyle='dashed')
+
+            elif "Water Level" in category:
+                # window=240 for 6-minute data (24 hours)
+                # min_periods=1 ensures it starts at the first data point
+                trend = y.rolling(window=240, center=True, min_periods=1).mean()
+                self.ax.plot(x, trend, color="red", linewidth=2, label="Daily Mean", alpha=0.4, linestyle='dashed')
+            
+        self.ax.legend(fontsize='small')
         self.figure.tight_layout()
         self.canvas.draw()
 
@@ -225,10 +255,10 @@ class DataApp:
         min_value = np.min(values)
 
         summary_text = f"Average: {avg_value:.2f}   Max: {max_value:.2f}   Min: {min_value:.2f}"
-        self.summary_label.config(text=summary_text)
+        self.summary_label.config(text=summary_text, font=("Arial", 16))
 
-    def open_visualization_window(self):
-        print("Visualization window clicked")
+    # def open_visualization_window(self):
+    #     print("Visualization window clicked")
 
     def save_to_csv(self):
 
@@ -255,9 +285,10 @@ class DataApp:
             return filename
         except Exception as e:
             print(f"Save failed: {e}")
+            self.filtered_df = pd.DataFrame()
+            self.update_plot()
             self.status_label["text"] = "Save Error"
             messagebox.showerror("Error", "Save Error")
-            
             return None
         
 
