@@ -106,7 +106,7 @@ class DataApp:
             os.makedirs(self.data_folder)
 
     def get_data(self):
-        print("clicked get data")
+        # print("clicked get data")
         product = self.products[self.product_var.get()]
         station_name = self.station_var.get().replace(" ", "_").lower()
 
@@ -118,8 +118,8 @@ class DataApp:
         local_filename = f"{station_name}_{product}_{begin_date}_{end_date}.csv"
         local_filepath = os.path.join(self.data_folder, local_filename)
 
-        if os.path.exists(local_filename):
-            print(f"Loading data from local file: {local_filepath}")
+        if os.path.exists(local_filepath):
+            # print(f"Loading data from local file: {local_filepath}")
             self.df = pd.read_csv(local_filepath)
 
             self.df["time"] = pd.to_datetime(self.df["time"])
@@ -129,7 +129,7 @@ class DataApp:
             self.status_label["text"] = f"Found and loaded data from local file {local_filepath}"
             return
     
-        print("data not found locally, using api")
+        # print("data not found locally, using api")
         url = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter"
         station = str(self.stations[self.station_var.get()])
 
@@ -232,7 +232,7 @@ class DataApp:
                 # Straight line for Temp
                 z = np.polyfit(pd.to_numeric(x), y, 1)
                 p = np.poly1d(z)
-                self.ax.plot(x, p(pd.to_numeric(x)), "r--", label="Temp Trend", alpha=0.4, linestyle='dashed')
+                self.ax.plot(x, p(pd.to_numeric(x)), "r--", label="Temp Trend", alpha=0.4)
 
             elif "Water Level" in category:
                 # window=240 for 6-minute data (24 hours)
@@ -240,7 +240,7 @@ class DataApp:
                 trend = y.rolling(window=240, center=True, min_periods=1).mean()
                 self.ax.plot(x, trend, color="red", linewidth=2, label="Daily Mean", alpha=0.4, linestyle='dashed')
             
-        self.ax.legend(fontsize='small')
+        self.ax.legend()
         self.figure.tight_layout()
         self.canvas.draw()
 
@@ -280,11 +280,11 @@ class DataApp:
 
         try:
             self.df.to_csv(filepath,  index=False)
-            print(f"Successfully saved to {filename}")
+            # print(f"Successfully saved to {filename}")
             self.status_label["text"] = f"Saved: {filename}"
             return filename
         except Exception as e:
-            print(f"Save failed: {e}")
+            # print(f"Save failed: {e}")
             self.filtered_df = pd.DataFrame()
             self.update_plot()
             self.status_label["text"] = "Save Error"
