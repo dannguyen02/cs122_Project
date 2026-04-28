@@ -26,13 +26,10 @@ class DataApp:
         }
 
         self.stations = {
-            "San Francisco": 9414290,
-            "Redwood City": 9414523,
             "Alameda": 9414750,
             "Monterey": 9413450,
             "Port Chicago": 9415144,
-            "Point Reyes": 9415020,
-            "Washington Lake": 9416131
+            "Point Reyes": 9415020
         }
 
         tk.Label(root, text="Ocean Data Dashboard",
@@ -64,7 +61,7 @@ class DataApp:
 
         tk.Label(control_frame, text="Station").grid(row=0, column=2, padx=5)
 
-        self.station_var = tk.StringVar(value="Redwood City")
+        self.station_var = tk.StringVar(value="Alameda")
         self.station_menu = ttk.Combobox(
             control_frame,
             textvariable=self.station_var,
