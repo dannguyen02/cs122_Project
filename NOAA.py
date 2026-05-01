@@ -74,12 +74,12 @@ class DataApp:
         self.get_button = tk.Button(control_frame, text="Get Data", command=self.get_data)
         self.get_button.grid(row=1, column=3, padx=8)
 
-        # self.visualization_button = tk.Button(
-        #     control_frame,
-        #     text="Open Visualizations",
-        #     command=self.open_visualization_window
-        # )
-        # self.visualization_button.grid(row=1, column=4, padx=8)
+        self.visualization_button = tk.Button(
+             control_frame,
+             text="Open Visualizations",
+             command=self.open_visualization_window
+         )
+        self.visualization_button.grid(row=1, column=4, padx=8)
 
         # self.save_button = tk.Button(
         #     control_frame, 
@@ -256,6 +256,77 @@ class DataApp:
 
     # def open_visualization_window(self):
     #     print("Visualization window clicked")
+    def open_visualization_window(self):
+        if self.filtered_df.empty:
+            messagebox.showwarning("No Data", "Please load data before opening visualizations.")
+            return
+
+        win = tk.Toplevel(self.root)
+        win.title("Visualizations")
+        win.geometry("1000x700")
+
+        y = self.filtered_df["value"].reset_index(drop=True)
+        x = self.filtered_df["time"].reset_index(drop=True)
+
+        fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+        ax1 = axes[0, 0]
+        ax2 = axes[0, 1]
+        ax3 = axes[1, 0]
+        ax4 = axes[1, 1]
+        fig.subplots_adjust(hspace=0.4, wspace=0.3, top=0.95, bottom=0.1, left=0.08, right=0.97)
+
+        ax1.plot(x, y, color="gray", alpha=0.5, linewidth=0.8, label="Raw data")
+        if len(y) >= 13:
+            window = min(51, len(y) if len(y) % 2 == 1 else len(y) - 1)
+            smoothed = savgol_filter(y, window_length=window, polyorder=3)
+            ax1.plot(x, smoothed, color="steelblue", linewidth=2, label="Smoothed")
+        ax1.set_title("Smoothed Signal", fontsize=11, pad=8)
+        #ax1.set_xlabel("Time")
+        #ax1.set_ylabel("Value")
+        ax1.tick_params(axis="x", rotation=20, labelsize=7)
+        ax1.legend(fontsize=8)
+
+        ax2.hist(y, bins=30, color="steelblue", edgecolor="white", alpha=0.85)
+        ax2.axvline(np.mean(y), color="red", linestyle="--", linewidth=1.5, label=f"Mean: {np.mean(y):.2f}")
+        ax2.set_title("Value Distribution", fontsize=11, pad=8)
+        #ax2.set_xlabel("Value")
+        #ax2.set_ylabel("Frequency")
+        ax2.legend(fontsize=8)
+
+        try:
+            if len(y) >= 48:
+                result = seasonal_decompose(y, model="additive", period=24, extrapolate_trend="freq")
+                ax3.plot(x, result.trend, color="darkorange", linewidth=1.5, label="Trend")
+            else:
+                ax3.text(0.5, 0.5, "Not enough data", ha="center", va="center", transform=ax3.transAxes)
+        except Exception as e:
+            ax3.text(0.5, 0.5, str(e), ha="center", va="center", transform=ax3.transAxes, fontsize=8)
+        ax3.set_title("Seasonal Decomposition", fontsize=11, pad=8)
+        #ax3.set_xlabel("Time")
+        #ax3.set_ylabel("Value")
+        ax3.tick_params(axis="x", rotation=20, labelsize=7)
+        ax3.legend(fontsize=8)
+
+        mean_val = np.mean(y)
+        std_val = np.std(y)
+        ax4.plot(x, y, color="gray", alpha=0.5, linewidth=0.8, label="Data")
+        ax4.axhline(mean_val, color="steelblue", linewidth=1.5, label=f"Mean: {mean_val:.2f}")
+        ax4.axhline(mean_val + std_val, color="orange", linewidth=1.2, linestyle="--",
+                    label=f"+1 std: {mean_val + std_val:.2f}")
+        ax4.axhline(mean_val - std_val, color="orange", linewidth=1.2, linestyle="--",
+                    label=f"-1 std: {mean_val - std_val:.2f}")
+        ax4.fill_between(x, mean_val - std_val, mean_val + std_val, color="steelblue", alpha=0.1)
+        ax4.set_title("Mean ± Std Dev", fontsize=11, pad=8)
+        #ax4.set_xlabel("Time")
+        #ax4.set_ylabel("Value")
+        ax4.tick_params(axis="x", rotation=20, labelsize=7)
+        ax4.legend(fontsize=8)
+
+        canvas = FigureCanvasTkAgg(fig, master=win)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+        tk.Button(win, text="Close", command=win.destroy).pack(pady=8)
 
     def save_to_csv(self):
 
