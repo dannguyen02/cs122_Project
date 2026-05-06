@@ -9,7 +9,6 @@ import os
 from scipy.signal import savgol_filter
 from statsmodels.tsa.seasonal import seasonal_decompose
 
-
 class DataApp:
     def __init__(self, root):
         self.root = root
@@ -31,6 +30,8 @@ class DataApp:
             "Port Chicago": 9415144,
             "Point Reyes": 9415020
         }
+
+        DATA_FOLDER = "noaa_data_csv_files"
 
         tk.Label(root, text="Ocean Data Dashboard",
                  font=("Arial",24)).pack(pady=10)
