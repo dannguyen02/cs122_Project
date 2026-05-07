@@ -362,6 +362,7 @@ class DataApp:
         try:
             self.df.to_csv(local_path, index=False)
             self.set_status("Saved: " + filename, SUCCESS)
+            messagebox.showinfo("File Saved", "Data saved to:\n" + local_path)
         except Exception as e:
             self.set_status("Save failed: " + str(e), ERROR)
 
